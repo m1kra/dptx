@@ -1,0 +1,6 @@
+#!/bin/bash
+cat $1.lol | ./compiler 1>$1.pir
+
+
+
+
