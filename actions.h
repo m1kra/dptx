@@ -4,14 +4,17 @@
 #include <stdio.h>
 
 #define MAX_STACK_DEPTH 30
+#define MAX_FUNCTION_NAME_LENGTH 300
 
 int _stackdepth;
 int _maxdepth;
 int _stacks[MAX_STACK_DEPTH];
+int fun_num;
 
 void init_scope(){
 	_stackdepth = 0;
   	_maxdepth = 0;
+  	fun_num = 0;
   	for(int i = 0; i < MAX_STACK_DEPTH; i++){
   		    _stacks[i] = 0;
   	}
@@ -43,17 +46,21 @@ void leave_scope(){
 	_stackdepth--;
 }
 
-void init_program(){
+void init_fun_block(char* idx){
+	fun_num++;
+	printf("\n.sub '%s'\n", idx);
+}
+
+void init_fun_body(){
 	printf(
-		    ".sub main\n"
 		    ".local pmc sTAcK\n"
-            " sTAcK = new 'ResizableFloatArray'\n"
+            "sTAcK = new 'ResizableFloatArray'\n"
             ".local num tMp_1\n"
             ".local num tMp_2\n"
             ".local num tMp_3\n"
-        );
-
+    );
 }
+
 
 void printgoto(char* boe, int only_label){
     printf("%s_", boe);
@@ -66,6 +73,26 @@ void printgoto(char* boe, int only_label){
 
 void get_expr(){
 	printf("pop tMp_1, sTAcK\n");
+}
+
+void beg_for_block(char* idx){
+    enter_scope();
+    printf("pop tMp_1,sTAcK\n");
+    printf("%s = tMp_1\n", idx);
+    printgoto("BEG", 1);
+}
+
+void mid_for_block(char* idx){
+	printf("pop tMp_1,sTAcK\n");
+    printf("if %s > tMp_1 ", idx);
+    printgoto("goto END", 0);
+}
+
+void end_for_block(char* idx){
+	printf("inc %s\n", idx);
+    printgoto("goto BEG", 0);
+    printgoto("END", 1);
+    leave_scope();
 }
 
 void beg_ifblock(){

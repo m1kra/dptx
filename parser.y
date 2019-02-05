@@ -33,7 +33,7 @@ fun_blocks  :   fun_block fun_blocks
             |
             ;
 
-fun_block   :   ID ':' { init_fun_block($1); } '(' arg_list ')' { init_fun_body(); } '{' body '}' { printf(".end"); }
+fun_block   :   ID ':' { init_fun_block($1); } '(' arg_list ')' { init_fun_body(); } body '.' { printf(".end"); }
             ;
 
 arg_list    :   arg_decl ',' tmp_arg_list
@@ -68,6 +68,7 @@ instr       :   print
 
 assignment  :   ID '=' expr { printf("pop tMp_1, sTAcK\n%s = tMp_1\n", $1); }
             |   ID SE { printf("%s = ", $1); } call
+            |   ID '=' STR { printf("%s = %s\n", $1, $<strval>3); }
             ;
 
 call        :   ID '(' { printf("%s(", $1); } values ')' { printf(")\n"); }
@@ -91,10 +92,10 @@ print       :   PRINT expr { printf("pop tMp_1, sTAcK\n say tMp_1 \n"); }
 
 
 for_block   :   FOR ID '=' expr { beg_for_block($2); } TO expr { mid_for_block($2); }
-                DO body DONE { end_for_block($2); };
+                DO body '.' { end_for_block($2); };
             ;
 
-if_block    :   subifblock FI {end_ifblock();}
+if_block    :   subifblock '.' { end_ifblock(); }
             ;
 
 ifelse_block:   subifblock ELSE {mid_ifelseblock();} body FI {end_ifelseblock();}
