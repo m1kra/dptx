@@ -7,11 +7,13 @@ scanner: scanner.l
 parser: parser.y
 	bison -d parser.y
 
-compiler: scanner parser
-	gcc -lfl lex.yy.c parser.tab.c -o compiler
+actions: actions.h
+
+compiler: scanner parser actions
+	gcc -lfl lex.yy.c parser.tab.c actions.h -o compiler
 
 
 .PHONY: clean
 
 clean:
-	rm -f *.c *.h compiler
+	rm -f *.c parser.tab.h *.o compiler

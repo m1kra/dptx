@@ -1,5 +1,5 @@
 %{
-  #include <stdio.h>
+    #include "actions.h"
 %}
 
 %token NUMBER
@@ -12,68 +12,54 @@
 %token DONE
 %token STRING
 
+
 %%
 
-program : { printf(".sub main\n");
-	    printf(".local pmc stos\n");
-            printf("     stos = new 'ResizableFloatArray'\n");
-            printf(".local num tmp\n");
-            printf(".local num tmp2\n");
-            printf(".local num tmp3\n");
-	    }
-           body
-          { printf(".end\n"); } ;
+program : body;
 
-body : decls instrs
-     ;
+body : block body
+       |
+       ;
 
-decls : decl decls
-      |
-      ;
+block : decl | instr
+        | forloop;
 
-instrs: instr instrs
-      |
-      ;
 
 decl : NUMBER ID { printf(".local num %c\n", $2); }
      ;
 
 instr : assignment
       | print
-      | forloop
       ;
 
 
-assignment : ID '=' expr { printf("pop tmp,stos\n%c = tmp\n",$1); }
+assignment : ID '=' expr { printf("pop tmp, stos\n%c = tmp\n",$1); }
            ;
 
-print :      PRINT expr        { printf("pop tmp,stos\nsay tmp\n"); }
+print :      PRINT expr        { printf("pop tmp, stos\n say tmp \n"); }
       ;
 
 
-forloop :    FOR
-             ID
-             '='
-             expr
-             {
-	       printf("pop tmp,stos\n");
-	       printf("%c = tmp\n",$2);
-               printf("BEGINLOOP:\n");
-             }
-             TO
-             expr
-             {
-	       printf("pop tmp,stos\n");
-               printf("if %c > tmp goto ENDLOOP\n",$2);
-             }
-             DO
-             body
-             DONE
-             {
-               printf("inc %c\n",$2);
-               printf("goto BEGINLOOP\n");
-               printf("ENDLOOP:\n");
-             }
+forloop :   FOR ID '=' expr
+                {
+                    enter_scope();
+                    printf("pop tmp,stos\n");
+                    printf("%c = tmp\n",$2);
+                    printgoto("BEG", 1);
+            }
+            TO expr
+                {
+                    printf("pop tmp,stos\n");
+                    printf("if %c > tmp ", $2);
+                    printgoto("goto END", 0);
+            }
+            DO body DONE
+                {
+                    printf("inc %c\n",$2);
+                    printgoto("goto BEG", 0);
+                    printgoto("END", 1);
+                    leave_scope();
+            }
         ;
 
 
@@ -84,12 +70,17 @@ expr : INTEGER_LITERAL { printf("push stos,%d.0\n",$1); }
 
 %%
 
-yyerror(char* s)
+int yyerror(char* s)
 {
   fprintf(stderr, "%s\n", s);
+  return 0;
 }
 
-main()
+int main()
 {
+  init_scope();
+  init_program();
   yyparse();
+  printf(".end\n");
+  return 0;
 }
