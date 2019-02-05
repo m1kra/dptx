@@ -10,15 +10,15 @@
 %union {
     char* strval;
     int intval;
+    char* type;
 }
 
 
-%token DOT;
 %token <strval> ID
-%token SE
+%token SE RET
 %token NUMBER STR
 %token <intval> INTEGER_LITERAL
-%token PRINT
+%token PRINT INC DEC
 %token FOR TO DO DONE
 %token IF THEN ELSE FI
 %token LE GE NE
@@ -57,14 +57,30 @@ arg_decl    :   NUMBER ID { printf(".param num %s\n", $2); }
             |   STR ID { printf(".param string %s\n", $2); }
             ;
 
-init        :   NUMBER ID { printf(".local num %s\n", $2); }
-            |   STR ID { printf(".local string %s\n", $2); }
+init        :   NUMBER init_nums
+            |   STR init_strs
+            |   NUMBER ID '=' expr { printf(".local num %s\npop tMp_1, sTAcK\n%s = tMp_1\n", $2, $2); }
+            |   STR ID SE STRING { printf(".local string %s\n %s=%s", $2, $2, $<strval>4); }
+            ;
+
+init_nums   : ID ',' { printf(".local num %s\n", $1); } init_nums
+            | ID { printf(".local num %s\n", $1); }
+            ;
+
+init_strs   : ID ',' { printf(".local string %s\n", $1); } init_strs
+            | ID { printf(".local string %s\n", $1); }
             ;
 
 instr       :   print
             |   call
+            |   return
+            |   ID INC { printf("inc %s\n", $1); }
+            |   ID DEC { printf("dec %s\n", $1); }
             ;
 
+return      :   RET ID { printf(".return(%s)\n", $2); }
+            |   RET
+            ;
 
 assignment  :   ID '=' expr { printf("pop tMp_1, sTAcK\n%s = tMp_1\n", $1); }
             |   ID SE { printf("%s = ", $1); } call
@@ -98,7 +114,7 @@ for_block   :   FOR ID '=' expr { beg_for_block($2); } TO expr { mid_for_block($
 if_block    :   subifblock '.' { end_ifblock(); }
             ;
 
-ifelse_block:   subifblock ELSE {mid_ifelseblock();} body FI {end_ifelseblock();}
+ifelse_block:   subifblock ELSE {mid_ifelseblock();} body '.' {end_ifelseblock();}
             ;
 
 subifblock  :   IF ifboolexpr THEN {beg_ifblock();} body
