@@ -1,33 +1,39 @@
 
 %{
-   #include "parser.tab.h"
+    #include "parser.tab.h"
+    #include <string.h>
 %}
 
-STRING	\"[a-zA-Z0-9]*\"|\'[a-zA-Z0-9]\'
+/*STRING    \"[a-zA-Z0-9]*\"|\'[a-zA-Z0-9]\'*/
 
 %%
 
-liczba             return NUMBER;
+tMp_1|tMp_2|tMp_3|sTAcK       fprintf(stderr, "Variable %s is reserved.", yytext); exit(1);
 
-drukuj             return PRINT;
-dla                return FOR;
-do                 return TO;
-rób                return DO;
-zrobione           return DONE;
+liczba      return NUMBER;
+drukuj      return PRINT;
+dla         return FOR;
+do          return TO;
+rób         return DO;
+zrobione    return DONE;
+if          return IF;
+then        return THEN;
+fi          return FI;
+else        return ELSE;
 
-[a-z]+   yylval=*yytext; return ID;
+[a-z]+   yylval.strval=strdup(yytext); return ID;
 
-[0-9]+  yylval=atoi(yytext); return INTEGER_LITERAL;
+[0-9]+  yylval.intval=atoi(yytext); return INTEGER_LITERAL;
 
-"="   return '=';
-"+"   return '+';
-"*"   return '*';
-
-{STRING}	{
-				/* yylval.str_val = malloc(yyleng * sizeof(char)); */
-				/* strcpy(yylval, yytext); */
-				return STRING;
-			}
+"="     return '=';
+"+"     return '+';
+"-"     return '-';
+"*"     return '*';
+"/"     return '/';
+"<="    return LE;
+">="    return GE;
+">"     return '>';
+"<"     return '<';
 
 
 [ \t\n] ;

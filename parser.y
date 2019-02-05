@@ -2,14 +2,23 @@
     #include "actions.h"
 %}
 
+%union {
+    char* strval;
+    int intval;
+}
+
+
+%token <strval> ID
 %token NUMBER
-%token ID
-%token INTEGER_LITERAL
+%token <intval> INTEGER_LITERAL
 %token PRINT
 %token FOR
 %token TO
 %token DO
 %token DONE
+%token IF THEN ELSE FI
+%token LE
+%token GE
 %token STRING
 
 
@@ -22,10 +31,11 @@ body : block body
        ;
 
 block : decl | instr
-        | forloop;
+        | forloop | ifblock | ifelseblock
+        ;
 
 
-decl : NUMBER ID { printf(".local num %c\n", $2); }
+decl : NUMBER ID { printf(".local num %s\n", $2); }
      ;
 
 instr : assignment
@@ -33,40 +43,54 @@ instr : assignment
       ;
 
 
-assignment : ID '=' expr { printf("pop tmp, stos\n%c = tmp\n",$1); }
+assignment : ID '=' expr { printf("pop tMp_1, sTAcK\n%s = tMp_1\n",$1); }
            ;
 
-print :      PRINT expr        { printf("pop tmp, stos\n say tmp \n"); }
+print :      PRINT expr        { printf("pop tMp_1, sTAcK\n say tMp_1 \n"); }
       ;
 
 
 forloop :   FOR ID '=' expr
                 {
                     enter_scope();
-                    printf("pop tmp,stos\n");
-                    printf("%c = tmp\n",$2);
+                    printf("pop tMp_1,sTAcK\n");
+                    printf("%s = tMp_1\n",$2);
                     printgoto("BEG", 1);
             }
             TO expr
                 {
-                    printf("pop tmp,stos\n");
-                    printf("if %c > tmp ", $2);
+                    printf("pop tMp_1,sTAcK\n");
+                    printf("if %s > tMp_1 ", $2);
                     printgoto("goto END", 0);
             }
             DO body DONE
                 {
-                    printf("inc %c\n",$2);
+                    printf("inc %s\n",$2);
                     printgoto("goto BEG", 0);
                     printgoto("END", 1);
                     leave_scope();
             }
         ;
 
+ifblock :       subifblock FI {end_ifblock();}
 
-expr : INTEGER_LITERAL { printf("push stos,%d.0\n",$1); }
-     | ID              { printf("push stos,%c\n",$1); }
-     | expr '+' expr   { printf("pop tmp2,stos\npop tmp3,stos\n tmp=tmp2+tmp3\n push stos,tmp\n"); }
+ifelseblock:    subifblock ELSE {mid_ifelseblock();} body FI {end_ifelseblock();}
+
+subifblock:     IF ifboolexpr THEN {beg_ifblock();} body
+
+
+expr : INTEGER_LITERAL { printf("push sTAcK,%d.0\n", $<intval>1); }
+     | ID              { printf("push sTAcK,%s\n", $1); }
+     | expr '+' expr   { printf("pop tMp_2,sTAcK\npop tMp_3,sTAcK\n tMp_1=tMp_2+tMp_3\n push sTAcK,tMp_1\n"); }
      ;
+
+ifboolexpr  :   ID '<' expr { get_expr(); printf("unless %s < tMp_1 ", $1); }
+            |   ID '>' expr { get_expr(); printf("unless %s > tMp_1 ", $1); }
+            |   ID '=' expr { get_expr(); printf("unless %s == tMp_1 ", $1); }
+            |   ID LE  expr { get_expr(); printf("unless %s <= tMp_1 ", $1); }
+            |   ID GE  expr { get_expr(); printf("unless %s >= tMp_1 ", $1); }
+            |
+            ;
 
 %%
 
